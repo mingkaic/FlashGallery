@@ -1,0 +1,24 @@
+/.buildpath
+/build/
+*/archive/
+/node_modules/
+
+__MACOSX
+.DS_Store
+
+.npm-debug.log
+.project
+.settings
+.classpath
+.sass-cache/
+
+# OS generated files #
+*/.DS_Store
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
