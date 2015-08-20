@@ -3,5 +3,12 @@ html
 	head
 		title= title
 		link(rel='stylesheet', href='/stylesheets/style.css')
+		link(rel='stylesheet', href='//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css')
 	body
-		block content
+		#wrap
+			include header
+			block content
+		include footer
+
+		script(type='javascript', href='//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js')
+		script(type='javascript', href='//ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js')

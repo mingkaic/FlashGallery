@@ -14,7 +14,7 @@ var app = express();
 var mongo = require('./mongo');
 mongo.init(function(err){
 	if (err) throw err;
-})
+});
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
