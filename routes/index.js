@@ -36,6 +36,8 @@ router.get('/', function(req, res, next) {
 
 router.post('/uploads', multipartMiddleware, function(req, res, next) {
 	fs.readFile(req.files.displayImage.path, function (err, data) {
+		console.log(data);
+
 		var imgPath = imgFolderPath+makeid()+".jpg";
 		fs.writeFile(imgPath, data, function (err) {
 			if (err) console.log(err);

@@ -11,14 +11,12 @@ var users = require('./routes/users');
 var app = express();
 
 // grid test module
-var config = require('./config');
-var MongoClient = require('mongodb').MongoClient;
-var mongoGrid = require('./mongoGrid');
+var mongo = require('./mongo');
+mongo.init(function(err){
+	if (err) throw err;
 
-MongoClient.connect(config.mongoUri, function(err, db) {
-	if (err) console.log(err);
-	else mongoGrid.put(db);
-});
+	mongo.put(mongo.db);
+})
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
