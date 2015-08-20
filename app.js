@@ -10,12 +10,10 @@ var users = require('./routes/users');
 
 var app = express();
 
-// grid test module
+// initialize mongo connection
 var mongo = require('./mongo');
 mongo.init(function(err){
 	if (err) throw err;
-
-	mongo.put(mongo.db);
 })
 
 // view engine setup

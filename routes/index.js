@@ -2,6 +2,8 @@ var express = require('express');
 var fs = require('fs');
 var multipart = require('connect-multiparty');
 
+var mongo = require('../mongo');
+
 var multipartMiddleware = multipart();
 var router = express.Router();
 
@@ -37,6 +39,10 @@ router.get('/', function(req, res, next) {
 router.post('/uploads', multipartMiddleware, function(req, res, next) {
 	fs.readFile(req.files.displayImage.path, function (err, data) {
 		console.log(data);
+
+		var id = mongo.put(data);
+
+		console.log(id);
 
 		var imgPath = imgFolderPath+makeid()+".jpg";
 		fs.writeFile(imgPath, data, function (err) {
