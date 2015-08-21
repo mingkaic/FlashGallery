@@ -114,7 +114,7 @@ router.post('/uploads', multipartMiddleware, function(req, res, next) {
 	});
 });
 
-router.delete('/removeLocal', function(res, req, next) {
+router.delete('/removeLocal/:path', function(res, req, next) {
 	var path = req.params.path;
 	var id = clearLocal(path);
 
@@ -122,7 +122,7 @@ router.delete('/removeLocal', function(res, req, next) {
 	res.redirect('back');
 });
 
-router.delete('/remove', function(res, req, next) {
+router.delete('/remove/:path', function(res, req, next) {
 	var path = req.params.path;
 	var id = clearLocal(path);
 

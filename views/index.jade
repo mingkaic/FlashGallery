@@ -7,6 +7,8 @@ block content
 				input(type="file", name="displayImage")
 			div
 				input(type="submit")
-		each Url in imageUrl
-			img(src= Url)
-			button.btn.btn-default(type='submit', onclick='clearThis(Url)')
+		div(ng-controller='imgCtl')
+			each Url in imageUrl
+				img(src= Url)
+				span
+					button.btn.btn-default(type='submit', ng-click='clearThis(Url)', title='remove')
