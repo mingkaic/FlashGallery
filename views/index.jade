@@ -7,8 +7,8 @@ block content
 				input(type="file", name="displayImage")
 			div
 				input(type="submit")
-		div(ng-controller='imgCtl')
-			each Url in imageUrl
-				img(src= Url)
+		div(ng-controller='imgCtrl', ng-init='imageUrl= #{JSON.stringify(imageUrl)}')
+			div(ng-repeat='Url in imageUrl')
+				img(src="{{Url}}")
 				span
-					button.btn.btn-default(type='submit', ng-click='clearThis(Url)', title='remove')
+					button.btn.btn-default(type='submit', ng-click='clearThis(Url)', title='remove') Remove

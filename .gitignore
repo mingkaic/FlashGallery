@@ -2,6 +2,8 @@
 /build/
 */archive/
 /node_modules/
+/data/
+/https:/
 
 __MACOSX
 .DS_Store
@@ -11,6 +13,7 @@ __MACOSX
 .settings
 .classpath
 .sass-cache/
+.mongod
 
 # OS generated files #
 */.DS_Store

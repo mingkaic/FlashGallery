@@ -74,6 +74,8 @@ router.get('/', function(req, res, next) {
 					for (var i = 0; i < length; i++) {
 						imgUrl.push("/images/"+files[i]);
 					}
+					
+					// this is the object being rendered!
 					var vm = {
 						title: 'The Flash Gallery',
 						imageUrl: imgUrl
@@ -115,7 +117,10 @@ router.post('/uploads', multipartMiddleware, function(req, res, next) {
 });
 
 router.delete('/removeLocal/:path', function(res, req, next) {
+	console.log('hi');
 	var path = req.params.path;
+	
+	console.log('path is '+path);
 	var id = clearLocal(path);
 
 	console.log(id);
