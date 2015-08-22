@@ -2,13 +2,15 @@ extends layout
 
 block content
 	.layout1.vertPager
-		form(action="/uploads", method="post", enctype="multipart/form-data")
-			div
-				input(type="file", name="displayImage")
-			div
-				input(type="submit")
-		div(ng-controller='imgCtrl', ng-init='imageUrl= #{JSON.stringify(imageUrl)}')
-			div(ng-repeat='Url in imageUrl')
-				img(src="{{Url}}")
-				span
-					button.btn.btn-default(type='submit', ng-click='clearThis(Url)', title='remove') Remove
+		#uploader
+			form(action="/uploads", method="post", enctype="multipart/form-data")
+				div
+					input(type="file", name="displayImage")
+				div
+					input(type="submit")
+		#gallery
+			div(ng-controller='imgCtrl', ng-init='imageUrl= #{JSON.stringify(imageUrl)}')
+				div(ng-repeat='Url in imageUrl')
+					img(src="{{Url}}")
+					span
+						button.btn.btn-default(type='submit', ng-click='clearThis(Url)', title='remove') Remove
