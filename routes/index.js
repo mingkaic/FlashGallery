@@ -74,6 +74,8 @@ router.get('/', function(req, res, next) {
 
 					if (err) console.log(err);
 					else {
+						// ignore the holder file
+						files.splice(files.indexOf('0.txt'), 1);
 						var length = files.length;
 						for (var i = 0; i < length; i++) {
 							imgUrl.push('/images/temp/'+files[i]);
