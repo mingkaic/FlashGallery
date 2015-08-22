@@ -28,6 +28,7 @@ module.exports.record = function (dataBundle) {
 };
 
 module.exports.retrieve = function(id, callback) {
+	console.log(id);
 	dataCollection.find(id, function(err, docs) {
 		if (err) console.log(err);
 		else {
@@ -39,7 +40,7 @@ module.exports.retrieve = function(id, callback) {
 };
 
 module.exports.remove = function(id, callback) {
-	dataCollection.delete(id, callback);
+	dataCollection.remove(id, callback);
 };
 
 // deals with file collection
@@ -53,10 +54,14 @@ module.exports.put = function (strData, callback) {
 module.exports.get = function (_id, callback) {
 	var error = null;
 
+	// master grid can only obtain image at a time.
+	// accessing fs.file directly to obtain an array of id of images
 	fileCollection.find({"_id": _id}, function(err, dataCursor){
 		if (err) error=err;
 
 		var datas = [];
+		
+		// asynchronously get image files from the array of image id 
 		dataCursor.each(function(err, item) {
 			if(item==null) dataCursor.close();
 			else {
@@ -67,7 +72,8 @@ module.exports.get = function (_id, callback) {
 				});
 			}
 		});
-
+		
+		// synchronize the callback
 		var flag = setInterval(function() {
 			if (dataCursor.isClosed()) {
 				clearInterval(flag);

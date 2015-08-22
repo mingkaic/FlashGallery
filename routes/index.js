@@ -27,26 +27,26 @@ function multiLocal(iteration, datas, callback) {
 
 	if (iteration >= len) return callback();
 
-	var imgPath = imgFolderPath+makeid()+".jpg";
+	var pathId = makeid();
+	var imgPath = imgFolderPath+pathId+'.jpg';
 
 	fs.writeFile(imgPath, datas[iteration].data, function (err) {
 		if (err) console.log(err);
-		mongo.record({imgId: ObjectID(datas[iteration].id), imgPath: imgPath});
+		mongo.record({imgId: ObjectID(datas[iteration].id), imgPath: pathId+'.jpg'});
 
 		multiLocal(iteration+1, datas, callback);
 	});
 }
 
-function clearLocal(path) {
-	mongo.retrieve({"imgPath": path}, function(localImgs) {
-		if (localImgs == null || localImgs.length <= 0) return null;
-
-		mongo.remove({"_id": localImgs[0].imgId}, function(err) {
+function clearLocal(path, res, callback) {
+	mongo.retrieve({'imgPath': path}, function(localImgs) {
+		if (localImgs == null || localImgs.length <= 0) callback(null, res);
+		mongo.remove({'_id': ObjectID(localImgs[0].imgId)}, function(err) {
 			if (err) console.log(err);
 			else {
-				fs.unlink(path, function(err) {
+				fs.unlink(imgFolderPath+path, function(err) {
 					if (err) console.log(err);
-					return localImgs[0].imgId;
+					callback(localImgs[0].imgId, res);
 				});
 			}
 		});
@@ -61,9 +61,10 @@ router.get('/', function(req, res, next) {
 		for (var i = 0; i < len; i++) {
 			localImgId.push(localImgs[i].imgId);
 		}
-
+		
 		// simply get all images from mongo not found in local
 		mongo.get({"$nin": localImgId}, function(err, datas) {
+			console.log(datas);
 			if (err) console.log(err);
 
 			var iteration = 0;
@@ -72,7 +73,7 @@ router.get('/', function(req, res, next) {
 					var imgUrl = [];
 					var length = files.length;
 					for (var i = 0; i < length; i++) {
-						imgUrl.push("/images/"+files[i]);
+						imgUrl.push('/images/'+files[i]);
 					}
 					
 					// this is the object being rendered!
@@ -96,7 +97,8 @@ router.post('/uploads', multipartMiddleware, function(req, res, next) {
 		mongo.put(data, function(err, id){
 			if (err) console.log(err);
 			else {
-				var imgPath = imgFolderPath+makeid()+".jpg";
+				var pathId = makeid();
+				var imgPath = imgFolderPath+pathId+'.jpg';
 				// next create a local copy on the imgPath
 				fs.writeFile(imgPath, data, function (err) {
 					if (err) console.log(err);
@@ -105,11 +107,11 @@ router.post('/uploads', multipartMiddleware, function(req, res, next) {
 					// store the mongo id and path of stored image
 					// to prevent retrieving duplicate images from mongo
 					else {
-						mongo.record({imgId: ObjectID(id), imgPath: imgPath});
+						mongo.record({imgId: ObjectID(id), imgPath: pathId+'.jpg'});
 					}
 
 					delete req.files;
-					res.redirect("back");
+					res.redirect('back');
 				});
 			}
 		});
@@ -117,26 +119,25 @@ router.post('/uploads', multipartMiddleware, function(req, res, next) {
 });
 
 router.delete('/removeLocal/:path', function(res, req, next) {
-	console.log('hi');
-	var path = req.params.path;
+	var path = req.req.params.path;
 	
-	console.log('path is '+path);
-	var id = clearLocal(path);
-
-	console.log(id);
-	res.redirect('back');
+	clearLocal(path, res, function(id, res) {
+		console.log('id removed from local: '+id);
+		res.res.redirect('back');
+	});
 });
 
 router.delete('/remove/:path', function(res, req, next) {
-	var path = req.params.path;
-	var id = clearLocal(path);
+	var path = req.req.params.path;
+	
+	clearLocal(path, res, function(id, res) {
+		if (id == null) return res.redirect('back');
 
-	if (id == null) return res.redirect('back');
-
-	mongo.delete(id, function(response) {
-		if (response) console.log(response);
-		else console.log('deletion successful');
-		res.redirect('back');
+		mongo.delete(id, function(response, res) {
+			if (response) console.log(response);
+			else console.log('deletion successful');
+			res.res.redirect('back');
+		});
 	});
 });
 
