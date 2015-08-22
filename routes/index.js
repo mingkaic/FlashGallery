@@ -64,13 +64,11 @@ router.get('/', function(req, res, next) {
 
 		// simply get all images from mongo not found in local
 		mongo.get({"$nin": localImgId}, function(err, datas) {
-			console.log(datas);
 			if (err) console.log(err);
 
 			var iteration = 0;
 
 			multiLocal(iteration, datas, function() {
-				console.log(imgFolderPath);
 				fs.readdir(imgFolderPath, function(err, files) {
 					var imgUrl = [];
 
