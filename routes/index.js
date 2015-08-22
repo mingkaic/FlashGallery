@@ -8,7 +8,7 @@ var ObjectID = require('mongodb').ObjectID;
 var multipartMiddleware = multipart();
 var router = express.Router();
 
-var imgFolderPath = __dirname + "/../public/images/";
+var imgFolderPath = __dirname + "/../public/images/temp/";
 
 function makeid() {
     var text = "";
@@ -61,21 +61,27 @@ router.get('/', function(req, res, next) {
 		for (var i = 0; i < len; i++) {
 			localImgId.push(localImgs[i].imgId);
 		}
-		
+
 		// simply get all images from mongo not found in local
 		mongo.get({"$nin": localImgId}, function(err, datas) {
 			console.log(datas);
 			if (err) console.log(err);
 
 			var iteration = 0;
+
 			multiLocal(iteration, datas, function() {
+				console.log(imgFolderPath);
 				fs.readdir(imgFolderPath, function(err, files) {
 					var imgUrl = [];
-					var length = files.length;
-					for (var i = 0; i < length; i++) {
-						imgUrl.push('/images/'+files[i]);
+
+					if (err) console.log(err);
+					else {
+						var length = files.length;
+						for (var i = 0; i < length; i++) {
+							imgUrl.push('/images/temp/'+files[i]);
+						}
 					}
-					
+
 					// this is the object being rendered!
 					var vm = {
 						title: 'The Flash Gallery',
@@ -120,7 +126,7 @@ router.post('/uploads', multipartMiddleware, function(req, res, next) {
 
 router.delete('/removeLocal/:path', function(res, req, next) {
 	var path = req.req.params.path;
-	
+
 	clearLocal(path, res, function(id, res) {
 		console.log('id removed from local: '+id);
 		res.res.redirect('back');
@@ -129,7 +135,7 @@ router.delete('/removeLocal/:path', function(res, req, next) {
 
 router.delete('/remove/:path', function(res, req, next) {
 	var path = req.req.params.path;
-	
+
 	clearLocal(path, res, function(id, res) {
 		if (id == null) return res.redirect('back');
 

@@ -28,7 +28,6 @@ module.exports.record = function (dataBundle) {
 };
 
 module.exports.retrieve = function(id, callback) {
-	console.log(id);
 	dataCollection.find(id, function(err, docs) {
 		if (err) console.log(err);
 		else {
