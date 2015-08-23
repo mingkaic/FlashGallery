@@ -43,9 +43,9 @@ module.exports.remove = function(id, callback) {
 };
 
 // deals with file collection
-module.exports.put = function (strData, callback) {
+module.exports.put = function (strData, type, callback) {
 	var buffer = new Buffer(strData);
-	masterGrid.put(buffer, {metadata: {category:'image'}, content_type: 'jpg'}, function(err, fileInfo){
+	masterGrid.put(buffer, {metadata: {category:'image'}, content_type: type}, function(err, fileInfo){
 		callback(err, fileInfo._id);
 	});
 };
@@ -67,7 +67,7 @@ module.exports.get = function (_id, callback) {
 				masterGrid.get(item._id, function(err, data) {
 					if (err) error=err;
 
-					datas.push({id: item._id, data: data});
+					datas.push({id: item._id, type: item.contentType, data: data});
 				});
 			}
 		});
