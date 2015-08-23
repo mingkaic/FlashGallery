@@ -14,6 +14,8 @@ var imgFolderPath = __dirname + "/../public/images/temp/";
 var fileType = ['image/jpeg', 'image/png'];
 var extensions = ['.jpg', '.png'];
 
+var LOCAL_MAX = 20;
+
 function makeid() {
     var text = "";
     var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -26,19 +28,27 @@ function makeid() {
 
 // loops through datas sequentially
 // pipes together the write file functions to ensure single threading
-function multiLocal(iteration, datas, callback) {
+function multiLocal(iteration, datas, newLocal, callback) {
 	var len = datas.length;
 
+	// base condition
 	if (iteration >= len) return callback();
 
 	var pathId = makeid()+extensions[fileType.indexOf(datas[iteration].type)];
 	var imgPath = imgFolderPath+pathId;
 
+	// write the image data to local
 	fs.writeFile(imgPath, datas[iteration].data, function (err) {
 		if (err) console.log(err);
-		mongo.record({imgId: ObjectID(datas[iteration].id), imgPath: pathId});
+		
+		var recordObject = {imgId: ObjectID(datas[iteration].id), imgPath: pathId};
+		
+		// update the imgData list of new files in public/images/temp
+		mongo.record(recordObject); // persistent copy
+		newLocal.push(recordObject); // volatile copy
 
-		multiLocal(iteration+1, datas, callback);
+		// recurse
+		multiLocal(iteration+1, datas, newLocal, callback);
 	});
 }
 
@@ -59,6 +69,7 @@ function clearLocal(path, res, callback) {
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
+	// localImgs are in the formimg {imgId, imgPath}
 	mongo.retrieve({}, function(localImgs) {
 		var localImgId = [];
 		var len = localImgs.length;
@@ -68,33 +79,26 @@ router.get('/', function(req, res, next) {
 
 		// simply get all images from mongo not found in local
 		// image objects are in the format {id, type, data}
-		mongo.get({"$nin": localImgId}, function(err, datas) {
+		// only shows 20 images (including the images already in public)
+		mongo.get({"$nin": localImgId, $limit: LOCAL_MAX-len}, function(err, datas) {
 			if (err) console.log(err);
 
 			var iteration = 0;
+			var newLocal = []; // passed by reference
 
-			multiLocal(iteration, datas, function() {
-				fs.readdir(imgFolderPath, function(err, files) {
-					var imgUrl = [];
+			multiLocal(iteration, datas, newLocal, function() {
+				localImgs = localImgs.concat(newLocal);
+				for (var i = 0; i < localImgs.length; i++) {
+					localImgs[i].imgId='/images/temp/'.concat(localImgs[i].imgPath);
+				}
 
-					if (err) console.log(err);
-					else {
-						// ignore the holder file
-						files.splice(files.indexOf('0.txt'), 1);
-						var length = files.length;
-						for (var i = 0; i < length; i++) {
-							imgUrl.push('/images/temp/'+files[i]);
-						}
-					}
+				// this is the object being rendered!
+				var vm = {
+					title: 'The Flash Gallery',
+					imageArr: localImgs
+				};
 
-					// this is the object being rendered!
-					var vm = {
-						title: 'The Flash Gallery',
-						imageUrl: imgUrl
-					};
-
-					res.render('index', vm);
-				});
+				res.render('index', vm);
 			});
 		});
 	});

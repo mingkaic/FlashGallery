@@ -9,8 +9,9 @@ block content
 				div
 					input(type="submit")
 		#gallery
-			div(ng-controller='imgCtrl', ng-init='imageUrl= #{JSON.stringify(imageUrl)}')
-				div(ng-repeat='Url in imageUrl')
-					img(ng-src="{{Url}}", ng-click='getThis(Url)')
-					span
-						button.btn.btn-default(type='submit', ng-click='clearThis(Url)', title='remove') Remove
+			div(ng-controller='imgCtrl', ng-init='imageArr= #{JSON.stringify(imageArr)}')
+				div(ng-repeat='Img in imageArr')
+					div(id='Img.imgId')
+						img(ng-src="{{Img.Url}}", ng-click='getThis(Img.imgPath)')
+						span
+							button.btn.btn-default(type='submit', ng-click='clearThis(Img.imgPath)', title='remove') Remove
