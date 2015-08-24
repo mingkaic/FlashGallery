@@ -8,7 +8,8 @@ var ObjectID = require('mongodb').ObjectID;
 var multipartMiddleware = multipart();
 var router = express.Router();
 
-var imgFolderPath = __dirname + "/../public/images/temp/";
+var imageFolderPath = "/images/temp/";
+var imgFolderPath = __dirname + "/../public"+imageFolderPath;
 
 // acceptable file types
 var fileType = ['image/jpeg', 'image/png'];
@@ -16,36 +17,42 @@ var extensions = ['.jpg', '.png'];
 
 var LOCAL_MAX = 20;
 
-function makeid() {
-    var text = "";
-    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-    for( var i=0; i < 10; i++ )
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
-
-    return text;
+function recordToArray(dataObjArr) {
+	var localIds = [];
+	var localImgs = [];
+	
+	for (var i = 0; i < dataObjArr.length; i++) {
+		localIds.push(dataObjArr[i].imgId);
+		localImgs.push(imageFolderPath+dataObjArr[i].imgId+dataObjArr[i].extension);
+	}
+	
+	return {id: localIds, path: localImgs};
 }
 
 // loops through datas sequentially
 // pipes together the write file functions to ensure single threading
+// PROBLEM: THIS FILE IS WRITING SEQUENTIALLY, WHEN WRITING SHOULD IDEALLY BE PERFORMED IN MULTITHREAD
+// PROPOSED SOLUTION: CHANGE MONGO.JS GET FUNCTION TO PERFORM MULTIPLE CALLBACKS, EACH CALLBACK HAS IT'S OWN WRITE
+// SYNCHRONIZATION WILL BE DONE ON THIS FILE
+// USE BUFFER THREAD TO DECOUPLE
 function multiLocal(iteration, datas, newLocal, callback) {
 	var len = datas.length;
 
 	// base condition
-	if (iteration >= len) return callback();
+	if (iteration >= len) return callback(null);
 
-	var pathId = makeid()+extensions[fileType.indexOf(datas[iteration].type)];
-	var imgPath = imgFolderPath+pathId;
+	var extension = extensions[fileType.indexOf(datas[iteration].type)];
+	var imgPath = imgFolderPath+datas[iteration].id+extension;
 
 	// write the image data to local
 	fs.writeFile(imgPath, datas[iteration].data, function (err) {
-		if (err) console.log(err);
+		callback(err);
 		
-		var recordObject = {imgId: ObjectID(datas[iteration].id), imgPath: pathId};
+		var recordObject = {imgId: new ObjectID(datas[iteration].id), extension: extension};
 		
 		// update the imgData list of new files in public/images/temp
 		mongo.record(recordObject); // persistent copy
-		newLocal.push(recordObject); // volatile copy
+		newLocal.push(imageFolderPath+recordObject.imgId+recordObject.extension); // volatile copy
 
 		// recurse
 		multiLocal(iteration+1, datas, newLocal, callback);
@@ -53,44 +60,40 @@ function multiLocal(iteration, datas, newLocal, callback) {
 }
 
 function clearLocal(path, res, callback) {
-	mongo.retrieve({'imgPath': path}, function(localImgs) {
-		if (localImgs == null || localImgs.length <= 0) callback(null, res);
-		mongo.remove({'_id': ObjectID(localImgs[0].imgId)}, function(err) {
-			if (err) console.log(err);
-			else {
-				fs.unlink(imgFolderPath+path, function(err) {
-					if (err) console.log(err);
-					callback(localImgs[0].imgId, res);
-				});
-			}
-		});
+	var id = path.split('.')[0];
+	mongo.remove({'imgId': new ObjectID(id)}, function(err) {
+		if (err) callback(err);
+		else {
+			fs.unlink(imgFolderPath+path, function(err) {
+				callback(err, id);
+			});
+		}
 	});
 }
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-	// localImgs are in the formimg {imgId, imgPath}
-	mongo.retrieve({}, function(localImgs) {
-		var localImgId = [];
-		var len = localImgs.length;
-		for (var i = 0; i < len; i++) {
-			localImgId.push(localImgs[i].imgId);
-		}
+	// localImgs are in the formimg {imgId, extension}
+	mongo.retrieve({}, function(localObj) {
+		var localImgId = recordToArray(localObj).id;
+		var localImgs = recordToArray(localObj).path;
+
+		console.log(localImgId);
 
 		// simply get all images from mongo not found in local
 		// image objects are in the format {id, type, data}
 		// only shows 20 images (including the images already in public)
-		mongo.get({"$nin": localImgId, $limit: LOCAL_MAX-len}, function(err, datas) {
+		var options = {"limit": LOCAL_MAX-localObj.length};
+		mongo.get({"$nin": localImgId}, options, function(err, datas) {
 			if (err) console.log(err);
 
 			var iteration = 0;
 			var newLocal = []; // passed by reference
 
-			multiLocal(iteration, datas, newLocal, function() {
+			multiLocal(iteration, datas, newLocal, function(err) {
+				if (err) console.log(err);
+
 				localImgs = localImgs.concat(newLocal);
-				for (var i = 0; i < localImgs.length; i++) {
-					localImgs[i].imgId='/images/temp/'.concat(localImgs[i].imgPath);
-				}
 
 				// this is the object being rendered!
 				var vm = {
@@ -125,17 +128,16 @@ router.post('/uploads', multipartMiddleware, function(req, res, next) {
 			mongo.put(data, req.files.displayImage.type, function(err, id){
 				if (err) console.log(err);
 				else {
-					var pathId = makeid()+extensions[ftypeIndex];
-					var imgPath = imgFolderPath+pathId;
+					var extension = extensions[ftypeIndex];
+					var imgPath = imgFolderPath+id+extension;
 					// next create a local copy on the imgPath
 					fs.writeFile(imgPath, data, function (err) {
 						if (err) console.log(err);
-	
-						// finally once the local picture is made,
-						// store the mongo id and path of stored image
-						// to prevent retrieving duplicate images from mongo
 						else {
-							mongo.record({imgId: ObjectID(id), imgPath: pathId});
+							// finally once the local picture is made, 
+							// store the mongo id and path of stored image 
+							// to prevent retrieving duplicate images from mongo
+							mongo.record({imgId: new ObjectID(id), extension: extension});
 						}
 	
 						delete req.files;
@@ -149,8 +151,8 @@ router.post('/uploads', multipartMiddleware, function(req, res, next) {
 
 router.delete('/removeLocal/:path', function(res, req, next) {
 	var path = req.req.params.path;
-
-	clearLocal(path, res, function(id, res) {
+	clearLocal(path, res, function(err, id) {
+		if (err) console.log(err);
 		console.log('id removed from local: '+id);
 		res.res.redirect('back');
 	});
@@ -159,12 +161,12 @@ router.delete('/removeLocal/:path', function(res, req, next) {
 router.delete('/remove/:path', function(res, req, next) {
 	var path = req.req.params.path;
 
-	clearLocal(path, res, function(id, res) {
-		if (id == null) return res.redirect('back');
+	clearLocal(path, res, function(err, id) {
+		if (err) console.log(err);
+		if (id == null || typeof id==='undefined') return res.redirect('back');
 
-		mongo.delete(id, function(response, res) {
-			if (response) console.log(response);
-			else console.log('deletion successful');
+		mongo.delete(id, function(response) {
+			console.log(response);
 			res.res.redirect('back');
 		});
 	});
