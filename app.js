@@ -11,12 +11,6 @@ var users = require('./routes/users');
 
 var app = express();
 
-// initialize mongo connection
-var mongo = require('./mongo');
-mongo.init(function(err){
-	if (err) throw err;
-});
-
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');

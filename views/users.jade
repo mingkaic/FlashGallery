@@ -1,0 +1,24 @@
+extends layout
+
+block content
+    .layout1.vertPager
+        section(ng-controller='panelCtrl')
+            ul.nav.nav-pills
+                li(ng-class='{ active: isSelected(1) }')
+                    a(ng-click='selectTab(1)') Log in
+                li(ng-class='{ active: isSelected(2) }')
+                    a(ng-click='selectTab(2)') Sign up
+            
+            div(ng-controller='userCtrl')
+                .control-group.error(ng-show='isSelected(1)')
+                    form(name='loginForm', ng-submit='loginForm.$valid && login()', novalidate)
+                        .controls #[input(type='text', placeholder='username', ng-model='user.name', required)]
+                        .controls #[input(type='password', placeholder='password', ng-model='user.password', required)]
+                        .controls #[input(type='submit', value='Login')]
+    
+                .panel(ng-show='isSelected(2)')
+                    form(name='signupForm', ng-submit='submitForm.$valid && signup()', novalidate)
+                        .controls #[input(type='text', placeholder='username', ng-model='user.name', required)]
+                        .controls #[input(type='email', placeholder='email', ng-model='user.email', required)]
+                        .controls #[input(type='password', placeholder='password', ng-model='user.password', required)]
+                        .controls #[input(type='submit', value='Signup')]
